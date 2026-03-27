@@ -1,0 +1,23 @@
+[
+  {
+    "id": "admin-1",
+    "name": "Admin Sandbox",
+    "email": "admin@admin.com",
+    "password": "admin",
+    "role": "admin"
+  },
+  {
+    "id": "29016282-30f3-4c0c-bf9b-0cd95321a89d",
+    "name": "kashish",
+    "email": "kashishgarg123@gmail.com",
+    "password": "kashish123",
+    "role": "user"
+  },
+  {
+    "id": "81f4382c-7c98-4c30-a2ed-1356f1f5654b",
+    "name": "kashish",
+    "email": "kashishgarg@example.com",
+    "password": "kashish123",
+    "role": "user"
+  }
+]

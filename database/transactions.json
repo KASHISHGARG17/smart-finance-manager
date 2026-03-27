@@ -1,0 +1,40 @@
+[
+  {
+    "id": "abf43500-7814-4ada-8240-edf6c13b9f97",
+    "userId": "81f4382c-7c98-4c30-a2ed-1356f1f5654b",
+    "type": "expense",
+    "amount": 2,
+    "description": "education",
+    "category": "General",
+    "method": "Credit Card",
+    "date": "2026-03-27T09:25:11.338Z"
+  },
+  {
+    "id": "f6b29061-ac6a-4cdb-9a98-21581ad289e4",
+    "userId": "81f4382c-7c98-4c30-a2ed-1356f1f5654b",
+    "type": "expense",
+    "amount": 23,
+    "description": "food",
+    "category": "General",
+    "method": "Credit Card",
+    "date": "2026-03-27T08:50:40.538Z"
+  },
+  {
+    "id": "d08beecb-f939-4e19-8183-cda6a2ac6577",
+    "userId": "81f4382c-7c98-4c30-a2ed-1356f1f5654b",
+    "type": "income",
+    "amount": 20000,
+    "description": "work",
+    "category": "General",
+    "method": "Credit Card",
+    "date": "2026-03-27T08:37:42.718Z"
+  },
+  {
+    "id": "a100708c-8788-4c57-a44b-d2f3c3995ad6",
+    "userId": "81f4382c-7c98-4c30-a2ed-1356f1f5654b",
+    "type": "expense",
+    "amount": 233,
+    "description": "edu",
+    "date": "2026-03-27T08:19:32.912Z"
+  }
+]
