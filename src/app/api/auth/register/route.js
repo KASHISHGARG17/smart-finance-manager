@@ -44,7 +44,7 @@ export async function POST(req) {
     return response;
   } catch (err) {
     console.error('Registration Error:', err);
-    return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Internal Error' }, { status: 500 });
   }
 }
 

@@ -5,26 +5,24 @@ import path from 'path';
 const JSON_DB_PATH = path.join(process.cwd(), 'database', 'data.json');
 const isDatabaseConfigured = !!process.env.POSTGRES_URL;
 
-// Lazy initialization to avoid build-time errors
-let _pool = null;
-let _client = null;
+let _db = null;
 
 async function getDb() {
-  if (_pool) return _pool;
-  if (_client) return _client;
-
+  if (_db) return _db;
   if (!isDatabaseConfigured) return null;
 
   try {
-    // Try pooled first
-    _pool = createPool();
-    return _pool;
+    // Try pooled connection first
+    const pool = createPool();
+    _db = pool;
+    return _db;
   } catch (err) {
     if (err.message.includes('invalid_connection_string')) {
       console.warn('[DB] Pooled connection failed, falling back to direct client.');
-      _client = createClient();
-      await _client.connect();
-      return _client;
+      const client = createClient();
+      await client.connect();
+      _db = client;
+      return _db;
     }
     throw err;
   }
@@ -33,7 +31,6 @@ async function getDb() {
 const sql = async (strings, ...values) => {
   const db = await getDb();
   if (!db) throw new Error('Database not configured');
-  // Both pool and client have the .sql tag in @vercel/postgres
   return await db.sql(strings, ...values);
 };
 
