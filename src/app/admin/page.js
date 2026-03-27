@@ -1,12 +1,14 @@
-import { getCollection } from '@/backend/lib/db';
+import { getAllUsers, getAllTransactions, initDB } from '@/backend/lib/db';
 import { Users, Activity, BarChart3, Database } from 'lucide-react';
 import styles from '../dashboard/page.module.css'; 
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const users = await getCollection('users');
-  const transactions = await getCollection('transactions');
+  await initDB();
+  const users = await getAllUsers();
+  const transactions = await getAllTransactions();
+
 
   const totalVolume = transactions.reduce((acc, t) => acc + t.amount, 0);
 

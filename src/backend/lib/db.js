@@ -101,6 +101,20 @@ export async function getUserByEmail(email) {
   return rows[0];
 }
 
+export async function getUserById(id) {
+  if (!isDatabaseConfigured) return null;
+  const { rows } = await sql`SELECT * FROM users WHERE id = ${id};`;
+  return rows[0];
+}
+
+export async function getAllUsers() {
+  if (!isDatabaseConfigured) return [];
+  const { rows } = await sql`SELECT * FROM users ORDER BY created_at DESC;`;
+  return rows;
+}
+
+
+
 export async function createUser(user) {
   if (!isDatabaseConfigured) throw new Error('Database not configured');
   await sql`
@@ -124,6 +138,13 @@ export async function getTransactions(userId) {
 
   return { balance, transactions: rows };
 }
+
+export async function getAllTransactions() {
+  if (!isDatabaseConfigured) return [];
+  const { rows } = await sql`SELECT * FROM transactions ORDER BY date DESC;`;
+  return rows;
+}
+
 
 export async function insertTransaction(tx) {
   if (!isDatabaseConfigured) throw new Error('Database not configured');

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifyAuth } from '@/backend/lib/auth';
-import { getCollection } from '@/backend/lib/db';
+import { getUserById } from '@/backend/lib/db';
 import { User, Mail, Shield, LogOut } from 'lucide-react';
 import styles from '../page.module.css';
 
@@ -11,8 +11,10 @@ export default async function Profile() {
   const token = cookieStore.get('sfm_token')?.value;
   const userPayload = await verifyAuth(token);
   
-  const users = await getCollection('users');
-  const user = users.find(u => u.id === userPayload.id);
+  if (!userPayload) return <div className={styles.loading}>Unauthorized.</div>;
+
+  const user = await getUserById(userPayload.id);
+
 
   if (!user) return <div className={styles.loading}>User not found.</div>;
 
