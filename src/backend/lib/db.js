@@ -1,9 +1,19 @@
-import { sql } from '@vercel/postgres';
+import { createPool } from '@vercel/postgres';
 import fs from 'fs/promises';
 import path from 'path';
 
-const isDatabaseConfigured = !!process.env.POSTGRES_URL;
+// Use a pooled connection to avoid 'invalid_connection_string' errors
+const pool = !!process.env.POSTGRES_URL ? createPool() : null;
+const isDatabaseConfigured = !!pool;
+
+// Helper to replace the global 'sql' tag
+const sql = async (strings, ...values) => {
+  if (!pool) throw new Error('Database not configured');
+  return await pool.sql(strings, ...values);
+};
+
 const JSON_DB_PATH = path.join(process.cwd(), 'database', 'data.json');
+
 
 async function getLocalData() {
   try {
