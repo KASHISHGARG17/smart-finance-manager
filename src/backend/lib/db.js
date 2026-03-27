@@ -1,6 +1,48 @@
 import { sql } from '@vercel/postgres';
+import fs from 'fs/promises';
+import path from 'path';
 
 const isDatabaseConfigured = !!process.env.POSTGRES_URL;
+const JSON_DB_PATH = path.join(process.cwd(), 'database', 'data.json');
+
+async function getLocalData() {
+  try {
+    const data = JSON.parse(await fs.readFile(JSON_DB_PATH, 'utf-8'));
+    // Ensure critical keys exist
+    if (!data.users) data.users = [];
+    if (!data.transactions) data.transactions = [];
+    if (!data.cards) data.cards = [];
+    if (!data.dues) data.dues = [];
+    if (!data.budgets) data.budgets = [];
+    if (!data.goals) data.goals = [];
+
+    // Add default admin if empty for testing
+    if (data.users.length === 0) {
+      data.users.push({
+        id: 'admin-id',
+        name: 'Admin',
+        email: 'admin@fintrack.com',
+        password: 'admin123',
+        role: 'admin'
+      });
+      await saveLocalData(data);
+    }
+    return data;
+  } catch (e) {
+    const defaultData = { 
+      users: [{ id: 'admin-id', name: 'Admin', email: 'admin@fintrack.com', password: 'admin123', role: 'admin' }], 
+      transactions: [], cards: [], dues: [], budgets: [], goals: [] 
+    };
+    await saveLocalData(defaultData);
+    return defaultData;
+  }
+}
+
+
+async function saveLocalData(data) {
+  await fs.mkdir(path.dirname(JSON_DB_PATH), { recursive: true }).catch(() => {});
+  await fs.writeFile(JSON_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+}
 
 /**
  * DATABASE SCHEMA INITIALIZATION
@@ -98,27 +140,42 @@ export async function initDB() {
  */
 
 export async function getUserByEmail(email) {
-  if (!isDatabaseConfigured) return null;
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.users.find(u => u.email === email) || null;
+  }
   const { rows } = await sql`SELECT * FROM users WHERE email = ${email};`;
   return rows[0];
 }
 
 export async function getUserById(id) {
-  if (!isDatabaseConfigured) return null;
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.users.find(u => u.id === id) || null;
+  }
   const { rows } = await sql`SELECT * FROM users WHERE id = ${id};`;
   return rows[0];
 }
 
 export async function getAllUsers() {
-  if (!isDatabaseConfigured) return [];
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.users;
+  }
   const { rows } = await sql`SELECT * FROM users ORDER BY created_at DESC;`;
   return rows;
 }
 
 
 
+
 export async function createUser(user) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    data.users.push(user);
+    await saveLocalData(data);
+    return user;
+  }
   await sql`
     INSERT INTO users (id, name, email, password, role)
     VALUES (${user.id}, ${user.name}, ${user.email}, ${user.password}, ${user.role});
@@ -126,9 +183,16 @@ export async function createUser(user) {
   return user;
 }
 
+
 export async function getTransactions(userId) {
-  if (!isDatabaseConfigured) return { balance: 0, transactions: [] };
-  const { rows } = await sql`SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY date DESC;`;
+  let rows = [];
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    rows = data.transactions.filter(t => t.userId === userId);
+  } else {
+    const { rows: result } = await sql`SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY date DESC;`;
+    rows = result;
+  }
   
   // Calculate balance efficiently
   let balance = 0;
@@ -141,15 +205,25 @@ export async function getTransactions(userId) {
   return { balance, transactions: rows };
 }
 
+
 export async function getAllTransactions() {
-  if (!isDatabaseConfigured) return [];
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.transactions;
+  }
   const { rows } = await sql`SELECT * FROM transactions ORDER BY date DESC;`;
   return rows;
 }
 
 
+
 export async function insertTransaction(tx) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    data.transactions.unshift(tx);
+    await saveLocalData(data);
+    return;
+  }
   await sql`
     INSERT INTO transactions (id, user_id, amount, type, category, description, date)
     VALUES (${tx.id}, ${tx.userId}, ${tx.amount}, ${tx.type}, ${tx.category || 'other'}, ${tx.description}, ${tx.date});
@@ -157,30 +231,48 @@ export async function insertTransaction(tx) {
 }
 
 
+
 // --- Cards ---
 export async function getCards(userId) {
-  if (!isDatabaseConfigured) return [];
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.cards.filter(c => c.userId === userId);
+  }
   const { rows } = await sql`SELECT * FROM cards WHERE user_id = ${userId};`;
   return rows;
 }
 
 export async function insertCard(card) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    data.cards.push(card);
+    await saveLocalData(data);
+    return;
+  }
   await sql`
     INSERT INTO cards (id, user_id, bank_name, last_four, type, card_holder)
     VALUES (${card.id}, ${card.userId}, ${card.bankName}, ${card.lastFour}, ${card.type}, ${card.cardHolder});
   `;
 }
 
+
 // --- Dues ---
 export async function getDues(userId) {
-  if (!isDatabaseConfigured) return [];
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.dues.filter(d => d.userId === userId);
+  }
   const { rows } = await sql`SELECT * FROM dues WHERE user_id = ${userId} ORDER BY due_date ASC;`;
   return rows;
 }
 
 export async function insertDue(due) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    data.dues.push(due);
+    await saveLocalData(data);
+    return;
+  }
   await sql`
     INSERT INTO dues (id, user_id, title, amount, due_date, status)
     VALUES (${due.id}, ${due.userId}, ${due.title}, ${due.amount}, ${due.dueDate}, ${due.status || 'unpaid'});
@@ -188,19 +280,36 @@ export async function insertDue(due) {
 }
 
 export async function updateDueStatus(id, userId, status) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    const index = data.dues.findIndex(d => d.id === id && d.userId === userId);
+    if (index !== -1) {
+      data.dues[index].status = status;
+      await saveLocalData(data);
+    }
+    return;
+  }
   await sql`UPDATE dues SET status = ${status} WHERE id = ${id} AND user_id = ${userId};`;
 }
 
+
 // --- Budgets ---
 export async function getBudgets(userId) {
-  if (!isDatabaseConfigured) return [];
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.budgets.filter(b => b.userId === userId);
+  }
   const { rows } = await sql`SELECT * FROM budgets WHERE user_id = ${userId};`;
   return rows;
 }
 
 export async function insertBudget(budget) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    data.budgets.push(budget);
+    await saveLocalData(data);
+    return;
+  }
   await sql`
     INSERT INTO budgets (id, user_id, category, limit_amount)
     VALUES (${budget.id}, ${budget.userId}, ${budget.category}, ${budget.limitAmount});
@@ -209,13 +318,21 @@ export async function insertBudget(budget) {
 
 // --- Goals ---
 export async function getGoals(userId) {
-  if (!isDatabaseConfigured) return [];
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    return data.goals.filter(g => g.userId === userId);
+  }
   const { rows } = await sql`SELECT * FROM goals WHERE user_id = ${userId};`;
   return rows;
 }
 
 export async function insertGoal(goal) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    data.goals.push(goal);
+    await saveLocalData(data);
+    return;
+  }
   await sql`
     INSERT INTO goals (id, user_id, title, target_amount, current_amount)
     VALUES (${goal.id}, ${goal.userId}, ${goal.title}, ${goal.targetAmount}, ${goal.currentAmount || 0});
@@ -223,7 +340,14 @@ export async function insertGoal(goal) {
 }
 
 export async function deleteItem(table, id, userId) {
-  if (!isDatabaseConfigured) throw new Error('Database not configured');
+  if (!isDatabaseConfigured) {
+    const data = await getLocalData();
+    if (data[table]) {
+      data[table] = data[table].filter(item => !(item.id === id && item.userId === userId));
+      await saveLocalData(data);
+    }
+    return;
+  }
   // Dangerous but controlled approach for this sandbox
   if (table === 'transactions') await sql`DELETE FROM transactions WHERE id = ${id} AND user_id = ${userId};`;
   if (table === 'cards') await sql`DELETE FROM cards WHERE id = ${id} AND user_id = ${userId};`;
@@ -231,5 +355,6 @@ export async function deleteItem(table, id, userId) {
   if (table === 'budgets') await sql`DELETE FROM budgets WHERE id = ${id} AND user_id = ${userId};`;
   if (table === 'goals') await sql`DELETE FROM goals WHERE id = ${id} AND user_id = ${userId};`;
 }
+
 
 
