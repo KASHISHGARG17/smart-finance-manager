@@ -15,7 +15,7 @@ export async function initDB() {
     // 1. Users table
     await sql`
       CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
@@ -27,8 +27,8 @@ export async function initDB() {
     // 2. Transactions table
     await sql`
       CREATE TABLE IF NOT EXISTS transactions (
-        id UUID PRIMARY KEY,
-        user_id UUID REFERENCES users(id),
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id),
         amount NUMERIC NOT NULL,
         type TEXT NOT NULL,
         category TEXT NOT NULL,
@@ -40,8 +40,8 @@ export async function initDB() {
     // 3. Cards table
     await sql`
       CREATE TABLE IF NOT EXISTS cards (
-        id UUID PRIMARY KEY,
-        user_id UUID REFERENCES users(id),
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id),
         bank_name TEXT NOT NULL,
         last_four TEXT NOT NULL,
         type TEXT NOT NULL,
@@ -52,8 +52,8 @@ export async function initDB() {
     // 4. Dues table
     await sql`
       CREATE TABLE IF NOT EXISTS dues (
-        id UUID PRIMARY KEY,
-        user_id UUID REFERENCES users(id),
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id),
         title TEXT NOT NULL,
         amount NUMERIC NOT NULL,
         due_date DATE NOT NULL,
@@ -64,8 +64,8 @@ export async function initDB() {
     // 5. Budgets table
     await sql`
       CREATE TABLE IF NOT EXISTS budgets (
-        id UUID PRIMARY KEY,
-        user_id UUID REFERENCES users(id),
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id),
         category TEXT NOT NULL,
         limit_amount NUMERIC NOT NULL
       );
@@ -74,8 +74,8 @@ export async function initDB() {
     // 6. Financial Goals table
     await sql`
       CREATE TABLE IF NOT EXISTS goals (
-        id UUID PRIMARY KEY,
-        user_id UUID REFERENCES users(id),
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id),
         title TEXT NOT NULL,
         target_amount NUMERIC NOT NULL,
         current_amount NUMERIC DEFAULT 0
@@ -85,8 +85,10 @@ export async function initDB() {
     console.log('[DB] All tables verified/created successfully.');
   } catch (error) {
     console.error('[DB] Schema Error:', error);
+    throw error; // Re-throw to allow API routes to catch and report it
   }
 }
+
 
 /**
  * COMPATIBILITY LAYER

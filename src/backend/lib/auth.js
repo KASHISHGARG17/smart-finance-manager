@@ -1,7 +1,8 @@
 import { jwtVerify, SignJWT } from 'jose';
 
-const JWT_SECRET = 'smart-finance-super-secret-key-do-not-use-in-prod';
+const JWT_SECRET = process.env.JWT_SECRET || 'smart-finance-super-secret-key-do-not-use-in-prod';
 const secretKey = new TextEncoder().encode(JWT_SECRET);
+
 
 export async function verifyAuth(token) {
   try {
